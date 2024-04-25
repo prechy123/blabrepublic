@@ -85,7 +85,6 @@ class BaseController {
             delete req.body.username;
             delete req.body.password;
           }
-          console.log(req.body);
           const data = await this.model.findByIdAndUpdate(id, req.body, { new: true });
           res.status(200).json({message: `${this.model.modelName} updated successfully`, data});
         } catch (error) {

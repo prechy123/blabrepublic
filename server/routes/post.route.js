@@ -6,7 +6,7 @@ const upload = require('../middleware/uploadFIles');
 
 const router = express.Router();
 
-router.get('/', verify_jwt, getAll);
+router.get('/', getAll);
 router.post('/new', verify_jwt, verify_editor, upload.single('file'), createItem);
 router.delete('/:id', verify_jwt, verify_editor, deleteItem);
 

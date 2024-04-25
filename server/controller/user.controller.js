@@ -4,6 +4,7 @@ const User = require('../models/user.model');
 const bcrypt = require('bcrypt');
 const CustomError = require('../middleware/error/customError');
 const { formatUser } = require('../utils/user.utils');
+const BlockedTokensModel = require('../models/blockedTokens.model');
 jwt = require('jsonwebtoken');
 
 
@@ -49,7 +50,6 @@ class UserController extends BaseController {
       if (req.file) {
         new_user_data.img = req.file.path;
       }
-    
       const new_user = await this.model.create(new_user_data);
       const user_data = formatUser(new_user)
       res.status(201).json({message: 'User created successfully', user: user_data});
@@ -68,17 +68,19 @@ class UserController extends BaseController {
       const regex = new RegExp(email, 'i')  // case insensitivity
       const user = await User.findOne({ email: regex });
       if (!user) {
-       throw new CustomError('User does not exist', 404);
+       throw new CustomError('Invalid email or password', 404);
       }
       const match = await bcrypt.compare(password, user.password);
       if (!match) {
        throw new CustomError('Invalid email or password', 401)
       }
-      const accessToken = jwt.sign({id: user._id}, process.env.JWT_ACCESS_SECRET, {expiresIn: '1h'});
-      const refreshToken = jwt.sign({id: user._id}, process.env.JWT_REFRESH_SECRET, { expiresIn: '3d' });
-      res.cookie('accessToken', accessToken, { maxAge: 60000 });
-      res.cookie('refreshToken', refreshToken, { maxAge: 259200000, httpOnly: true, secure: true, sameSite: 'strict' }); // maxage in 3days
-      const user_data = formatUser(user);
+      const accessToken = jwt.sign({id: user._id}, process.env.JWT_ACCESS_SECRET, {expiresIn: '5d'});
+      // const refreshToken = jwt.sign({id: user._id}, process.env.JWT_REFRESH_SECRET, { expiresIn: '3d' });
+      const user_info = formatUser(user);
+      const user_data = {
+        user: user_info,
+        token: accessToken
+      }
       res.status(200).json({message: 'User logged in successfully', user: user_data});
     } catch (error) {
       console.log(error);
@@ -87,12 +89,14 @@ class UserController extends BaseController {
   }
 
   // Logout a user
-  logoutUser = (req, res, next) => {
+  logoutUser = async (req, res, next) => {
     try {
-      const accessToken = jwt.sign({id:'1'}, process.env.JWT_ACCESS_SECRET, { expiresIn: '0.5s' });
-      const refreshToken = jwt.sign({id:'1'}, process.env.JWT_REFRESH_SECRET, { expiresIn: '0.5s' });
-      res.cookie('accessToken', accessToken, { maxAge: 1 });
-      res.cookie('refreshToken', refreshToken, { maxAge: 1, httpOnly: true, secure: true, sameSite: 'strict' });
+      console.log(req.headers.authorization);
+      if (!req.headers.authorization) {
+        throw new CustomError('No user logged in', 403);
+      }
+      const accessToken = req.headers.authorization.split(' ')[1];
+      await BlockedTokensModel.create({token: accessToken});
       res.status(200).json({message: 'User logged out successfully'});
     } catch (err) {
       next(err)
@@ -110,13 +114,7 @@ class UserController extends BaseController {
       if (!user) {
         throw new CustomError('No user found', 404);
       }
-      const current_user = {
-        firstname: user.firstname,
-        lastname: user.lastname,
-        username: user.username,
-        email: user.email,
-        role: user.role
-      }
+      const current_user = formatUser(user);
       res.status(200).json({user: current_user});
     } catch(err) {
       next(err);

@@ -21,10 +21,10 @@ const storage = multer.diskStorage({
     destination: function(req, res, cb) {
         let destDir; // destination directory
         if (req.route.path == '/register' || req.route.path === '/users/update/:id') {
-            destDir = path.join(__dirname, '..', 'uploads', 'users');
+            destDir = 'uploads/users';
         }
         if (req.route.path == '/new' || req.route.path === '/posts/update/:id')  {
-            destDir = path.join(__dirname, '..', 'uploads', 'posts');
+            destDir = 'uploads/posts';
         }
         cb(null, destDir);
     },

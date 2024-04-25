@@ -15,15 +15,14 @@ const upload = require('../middleware/uploadFIles');
 const {
     verify_jwt,
     verify_admin,
-    isLoggedin
 } = require('../middleware/authorization/authenticate');
 
 
 const router = express.Router();
 
 router.get('/all', getAll);
-router.post('/register', isLoggedin, upload.single('img'), registerUser);
-router.post('/login', isLoggedin, loginUser);
+router.post('/register', upload.single('img'), registerUser);
+router.post('/login', loginUser);
 router.get('/logout', logoutUser);
 router.post('/update_role', verify_jwt, verify_admin, updateUserRole);
 router.get('/current_user', verify_jwt, currentUser);

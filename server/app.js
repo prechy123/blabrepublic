@@ -6,6 +6,7 @@ const postRoute = require('./routes/post.route');
 const errorHandler = require('./middleware/error/errorHandler');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 
 const app = express();
 
@@ -16,7 +17,12 @@ const DB_URL = process.env.DB_URL
 app.use(express.json());  //parse json bodies
 app.use(cookieParser()); // parses cookies
 app.use(express.urlencoded({extended: false}));   //parse forms
-app.use(cors()); //Cors handler
+app.use(cors({
+  origin:'http://localhost:3000', 
+  credentials:true,            //access-control-allow-credentials:true
+  optionSuccessStatus:200
+}));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 // routes
